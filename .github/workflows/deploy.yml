@@ -1,0 +1,48 @@
+name: Salesforce Deployment
+
+on:
+  push:
+    branches:
+      - qa
+      - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install Salesforce CLI
+        run: |
+          wget https://developer.salesforce.com/media/salesforce-cli/sfdx-linux-amd64.tar.xz
+          tar xJf sfdx-linux-amd64.tar.xz
+          ./sfdx/install
+
+      - name: Authenticate to Salesforce Org
+        env:
+          BRANCH: ${{ github.ref_name }}
+          QA_AUTH_URL: ${{ secrets.QA_AUTH_URL }}
+          PROD_AUTH_URL: ${{ secrets.PROD_AUTH_URL }}
+        run: |
+          if [ "$BRANCH" = "qa" ]; then
+            echo "$QA_AUTH_URL" > authurl.txt
+            sf auth sfdxurl:store -f authurl.txt -a QAOrg
+          elif [ "$BRANCH" = "prod" ]; then
+            echo "$PROD_AUTH_URL" > authurl.txt
+            sf auth sfdxurl:store -f authurl.txt -a ProdOrg
+          else
+            echo "Branch $BRANCH not configured for deployment."
+            exit 1
+          fi
+
+      - name: Deploy to Salesforce Org
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ "$BRANCH" = "qa" ]; then
+            sf project deploy start --target-org QAOrg --source-dir force-app --wait 10
+          elif [ "$BRANCH" = "prod" ]; then
+            sf project deploy start --target-org ProdOrg --source-dir force-app --wait 10
+          fi
