@@ -16,9 +16,7 @@ jobs:
 
       - name: Install Salesforce CLI
         run: |
-          wget https://developer.salesforce.com/media/salesforce-cli/sfdx-linux-amd64.tar.xz
-          tar xJf sfdx-linux-amd64.tar.xz
-          ./sfdx/install
+          curl -s https://developer.salesforce.com/media/salesforce-cli/install.sh | bash
 
       - name: Authenticate to Salesforce Org
         env:
